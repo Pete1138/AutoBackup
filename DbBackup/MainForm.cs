@@ -39,10 +39,10 @@ namespace DbBackup
         private void AutoBackup_BackupComplete(object sender, string message)
         {
             var completedMessage = message 
-                + Environment.NewLine 
+                + Environment.NewLine + Environment.NewLine
                 + string.Format(BackupCompleteMessage, _autoBackup.BackupType,_autoBackup.BackupFilePath) 
                 + Environment.NewLine
-                + "Path copied to the clipboard";
+                + "(Path copied to the clipboard)";
 
             BeginInvoke(new Action<string>(CompleteBackup), completedMessage);
         }

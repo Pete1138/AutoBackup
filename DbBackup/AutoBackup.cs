@@ -22,11 +22,14 @@ namespace DbBackup
         public string BackupLocationDirectory { get; private set; }
         public string BackupFileName { get; private set; }
         public bool ForceFullBackup { get; private set; }
-        
+
         public TimeSpan MaximumAgeOfFullBackup { get; private set; }
         public DateTime CurrentDateTime { get; set; }
 
         private bool _incrementalBackup;
+
+        private const string MasterConfigPath32Bit = @"C:\Program Files\Advanced Legal\ALB\PMS\master.config";
+        private const string MasterConfigPath64Bit = @"C:\Program Files (x86)\Advanced Legal\ALB\PMS\master.config";
         private const string BackupFileExtension = ".bak";
 
         public string BackupFilePath { get; private set; }
@@ -52,7 +55,20 @@ namespace DbBackup
             var settings = Properties.Settings.Default;
             BackupLocationRoot = settings.BackupLocationRoot;
             BackupLocationUserRoot = Path.Combine(BackupLocationRoot, UserName);
-            DatabaseServerName = settings.DatabaseServerName;
+
+            if (string.IsNullOrWhiteSpace(settings.DatabaseServerName))
+            {
+                GetDatabaseSettingsFromMasterConfig();
+
+                if (string.IsNullOrWhiteSpace(DatabaseServerName))
+                {
+                    OnInformation(this, "Database Server is not set - database backup will fail!");
+                }
+            }
+            else
+            {
+                DatabaseServerName = settings.DatabaseServerName;
+            }
 
             var databaseServerFolderName = DatabaseServerName;
             if (DatabaseServerName.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
@@ -66,8 +82,50 @@ namespace DbBackup
             ForceFullBackup = settings.ForceFullBackup;
         }
 
+        private void GetDatabaseSettingsFromMasterConfig()
+        {
+            System.Configuration.Configuration config = null;
+
+            if (File.Exists(MasterConfigPath32Bit))
+            {
+                config = ConfigurationManager.OpenExeConfiguration(MasterConfigPath32Bit);
+            }
+            else if (File.Exists(MasterConfigPath64Bit))
+            {
+                config = ConfigurationManager.OpenExeConfiguration(MasterConfigPath64Bit);
+            }
+
+            if (config == null)
+            {
+                OnInformation(this, "Unable to find PMS installation on local machine");
+            }
+            else
+            {
+
+                if (config.AppSettings.Settings["ServerName"] != null)
+                {
+                    DatabaseServerName = config.AppSettings.Settings["ServerName"].Value;
+                }
+
+                if (config.AppSettings.Settings["DatabaseName"] != null)
+                {
+                    DatabaseServerName = config.AppSettings.Settings["DatabaseName"].Value;
+                }
+            }
+        }
+
         public void PerformBackupAsync()
         {
+            if (string.IsNullOrEmpty(DatabaseServerName))
+            {
+                throw new ArgumentException("Database Server not set - unable to perform backup!");
+            }
+
+            if (string.IsNullOrEmpty(DatabaseName))
+            {
+                throw new ArgumentException("Database name not set - unable to perform backup!");
+            }
+
             var backupDeviceItem = new BackupDeviceItem();
             backupDeviceItem.DeviceType = DeviceType.File;
 
@@ -110,7 +168,7 @@ namespace DbBackup
             var server = new Server(DatabaseServerName);
 
             OnInformation(this, "Attempting backup: " + BackupFilePath);
-            backup.SqlBackupAsync(server);   
+            backup.SqlBackupAsync(server);
         }
 
         private string GetBackupFileName(string albDatabaseVersion)
@@ -123,9 +181,9 @@ namespace DbBackup
             return sb.ToString();
         }
 
-        private DirectoryInfo GetLastBackupFolder(string backupLocationUserRoot)
+        private DirectoryInfo GetLastBackupFolder(string backupLocationUserAndServerRoot)
         {
-            var directory = new DirectoryInfo(backupLocationUserRoot);
+            var directory = new DirectoryInfo(backupLocationUserAndServerRoot);
             var latestDirectory = directory.GetDirectories().OrderByDescending(x => x.CreationTime).FirstOrDefault();
             return latestDirectory;
         }
@@ -155,7 +213,7 @@ namespace DbBackup
         private void CreateDirectoryIfNotExists(string directoryPath)
         {
             if (!Directory.Exists(directoryPath))
-            {              
+            {
                 Directory.CreateDirectory(directoryPath);
             }
         }
@@ -214,7 +272,7 @@ namespace DbBackup
             {
                 using (
                     var command =
-                        new SqlCommand("select sysParamValue from sysparam where sysparamName = 'Database Version'",connection))
+                        new SqlCommand("select sysParamValue from sysparam where sysparamName = 'Database Version'", connection))
                 {
                     connection.Open();
                     databaseVersion = command.ExecuteScalar().ToString();
