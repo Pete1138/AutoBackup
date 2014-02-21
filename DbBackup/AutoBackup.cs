@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Xml.XPath;
 using Microsoft.SqlServer.Management.Smo;
 
 namespace DbBackup
@@ -84,34 +85,29 @@ namespace DbBackup
 
         private void GetDatabaseSettingsFromMasterConfig()
         {
-            System.Configuration.Configuration config = null;
-
             if (File.Exists(MasterConfigPath32Bit))
             {
-                config = ConfigurationManager.OpenExeConfiguration(MasterConfigPath32Bit);
+                SetDatabaseSettingsFromXmlConfig(MasterConfigPath32Bit);
             }
             else if (File.Exists(MasterConfigPath64Bit))
             {
-                config = ConfigurationManager.OpenExeConfiguration(MasterConfigPath64Bit);
-            }
-
-            if (config == null)
-            {
-                OnInformation(this, "Unable to find PMS installation on local machine");
+                SetDatabaseSettingsFromXmlConfig(MasterConfigPath64Bit);
             }
             else
             {
-
-                if (config.AppSettings.Settings["ServerName"] != null)
-                {
-                    DatabaseServerName = config.AppSettings.Settings["ServerName"].Value;
-                }
-
-                if (config.AppSettings.Settings["DatabaseName"] != null)
-                {
-                    DatabaseServerName = config.AppSettings.Settings["DatabaseName"].Value;
-                }
+                OnInformation(this, "Unable to find PMS installation on local machine");
             }
+        }
+
+        private void SetDatabaseSettingsFromXmlConfig(string xmlConfigPath)
+        {
+            var document = new XPathDocument(xmlConfigPath);
+            var navigator = document.CreateNavigator();
+            DatabaseServerName = navigator.SelectSingleNode(@"/appSettings/add[@key='ServerName']/@value").ToString();
+            Properties.Settings.Default["DatabaseServerName"] = DatabaseServerName;
+            DatabaseName = navigator.SelectSingleNode(@"/appSettings/add[@key='DatabaseName']/@value").ToString();
+            Properties.Settings.Default["DatabaseName"] = DatabaseName;
+            Properties.Settings.Default.Save();
         }
 
         public void PerformBackupAsync()

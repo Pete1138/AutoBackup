@@ -37,18 +37,6 @@ namespace DbBackup.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("localhost")]
-        public string DatabaseServerName {
-            get {
-                return ((string)(this["DatabaseServerName"]));
-            }
-            set {
-                this["DatabaseServerName"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("IrisLawBusiness")]
         public string DatabaseName {
             get {
@@ -80,6 +68,18 @@ namespace DbBackup.Properties {
             }
             set {
                 this["ForceFullBackup"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DatabaseServerName {
+            get {
+                return ((string)(this["DatabaseServerName"]));
+            }
+            set {
+                this["DatabaseServerName"] = value;
             }
         }
     }

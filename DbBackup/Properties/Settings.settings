@@ -5,9 +5,6 @@
     <Setting Name="BackupLocationRoot" Type="System.String" Scope="User">
       <Value Profile="(Default)">\\granas1\Backups</Value>
     </Setting>
-    <Setting Name="DatabaseServerName" Type="System.String" Scope="User">
-      <Value Profile="(Default)">localhost</Value>
-    </Setting>
     <Setting Name="DatabaseName" Type="System.String" Scope="User">
       <Value Profile="(Default)">IrisLawBusiness</Value>
     </Setting>
@@ -16,6 +13,9 @@
     </Setting>
     <Setting Name="ForceFullBackup" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DatabaseServerName" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>
