@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DbBackup.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="BackupLocationRoot" Type="System.String" Scope="User">
+      <Value Profile="(Default)">\\granas1\Backups</Value>
+    </Setting>
+    <Setting Name="DatabaseServerName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">localhost</Value>
+    </Setting>
+    <Setting Name="DatabaseName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">IrisLawBusiness</Value>
+    </Setting>
+    <Setting Name="MaximumAgeOfFullBackup" Type="System.String" Scope="User">
+      <Value Profile="(Default)">14.00:00:00</Value>
+    </Setting>
+    <Setting Name="ForceFullBackup" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
