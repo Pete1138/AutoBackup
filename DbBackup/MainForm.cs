@@ -8,7 +8,7 @@ namespace DbBackup
 {
     public partial class MainForm : Form
     {
-        private readonly AutoBackup _autoBackup;
+        private AutoBackup _autoBackup;
         private const string StatusBarMessage = "Backing up database {0} to {1}....";
         private const string BackupCompleteMessage = "{0} backup created : {1}";
         private readonly string _formTitle = "ALB Database Backup : " + Environment.UserName;
@@ -85,6 +85,8 @@ namespace DbBackup
             MessagesTextbox.Clear();
             StatusBarLabel.Text = string.Format(StatusBarMessage, _autoBackup.DatabaseName, _autoBackup.BackupLocationUserRoot);
             SetWaitCursors();
+            
+            _autoBackup.CurrentDateTime  = DateTime.Now;
 
             try
             {
@@ -134,6 +136,7 @@ namespace DbBackup
         {
             Properties.Settings.Default.ForceFullBackup = ForceFullBackupCheckbox.Checked;
             Properties.Settings.Default.Save();
+            _autoBackup.LoadSettings();
         }
     }
 }

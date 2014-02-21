@@ -18,12 +18,13 @@ namespace DbBackup
 
         public string BackupLocationRoot { get; private set; }
         public string BackupLocationUserRoot { get; private set; }
+        public string BackupLocationUserAndServer { get; private set; }
         public string BackupLocationDirectory { get; private set; }
         public string BackupFileName { get; private set; }
         public bool ForceFullBackup { get; private set; }
         
         public TimeSpan MaximumAgeOfFullBackup { get; private set; }
-        private DateTime _currentTime;
+        public DateTime CurrentDateTime { get; set; }
 
         private bool _incrementalBackup;
         private const string BackupFileExtension = ".bak";
@@ -34,11 +35,10 @@ namespace DbBackup
         public event EventHandler<string> Information;
         public event EventHandler<string> BackupComplete;
 
-        public AutoBackup(DateTime currentTime)
+        public AutoBackup(DateTime currentDateTime)
         {
             UserName = Environment.UserName;
-            _currentTime = currentTime;
-
+            CurrentDateTime = currentDateTime;
             LoadSettings();
         }
 
@@ -53,6 +53,14 @@ namespace DbBackup
             BackupLocationRoot = settings.BackupLocationRoot;
             BackupLocationUserRoot = Path.Combine(BackupLocationRoot, UserName);
             DatabaseServerName = settings.DatabaseServerName;
+
+            var databaseServerFolderName = DatabaseServerName;
+            if (DatabaseServerName.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
+            {
+                databaseServerFolderName = Environment.MachineName;
+            }
+
+            BackupLocationUserAndServer = Path.Combine(BackupLocationUserRoot, databaseServerFolderName);
             DatabaseName = settings.DatabaseName;
             MaximumAgeOfFullBackup = TimeSpan.Parse(Properties.Settings.Default.MaximumAgeOfFullBackup);
             ForceFullBackup = settings.ForceFullBackup;
@@ -63,23 +71,23 @@ namespace DbBackup
             var backupDeviceItem = new BackupDeviceItem();
             backupDeviceItem.DeviceType = DeviceType.File;
 
-            CreateDirectoryIfNotExists(BackupLocationUserRoot);
+            CreateDirectoryIfNotExists(BackupLocationUserAndServer);
 
-            var lastBackupFolder = GetLastBackupFolder(BackupLocationUserRoot);
+            var lastBackupFolder = GetLastBackupFolder(BackupLocationUserAndServer);
 
-            var isLastBackupTooOld = (lastBackupFolder == null) || lastBackupFolder.CreationTime <= _currentTime.Subtract(MaximumAgeOfFullBackup);
+            var isLastBackupTooOld = (lastBackupFolder == null) || lastBackupFolder.CreationTime <= CurrentDateTime.Subtract(MaximumAgeOfFullBackup);
 
             _incrementalBackup = false;
 
             if (isLastBackupTooOld)
             {
-                BackupLocationDirectory = Path.Combine(BackupLocationUserRoot, _currentTime.Date.ToString("yyy-MM-dd"));
+                BackupLocationDirectory = Path.Combine(BackupLocationUserAndServer, CurrentDateTime.Date.ToString("yyy-MM-dd"));
 
                 CreateDirectoryIfNotExists(BackupLocationDirectory);
             }
             else
             {
-                BackupLocationDirectory = Path.Combine(BackupLocationUserRoot, lastBackupFolder.Name);
+                BackupLocationDirectory = Path.Combine(BackupLocationUserAndServer, lastBackupFolder.Name);
                 var directoryHasAFullBackup = new DirectoryInfo(BackupLocationDirectory).GetFiles("*.full.bak").Any();
                 if (directoryHasAFullBackup)
                 {
@@ -100,13 +108,15 @@ namespace DbBackup
 
             var backup = CreateBackup(backupDeviceItem);
             var server = new Server(DatabaseServerName);
+
+            OnInformation(this, "Attempting backup: " + BackupFilePath);
             backup.SqlBackupAsync(server);   
         }
 
         private string GetBackupFileName(string albDatabaseVersion)
         {
             var sb = new StringBuilder();
-            sb.Append(_currentTime.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture));
+            sb.Append(CurrentDateTime.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture));
             sb.Append("_v." + albDatabaseVersion);
             sb.Append(_incrementalBackup ? ".diff" : ".full");
             sb.Append(BackupFileExtension);
