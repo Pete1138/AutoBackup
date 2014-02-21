@@ -36,8 +36,10 @@ namespace DbBackup
         public string BackupFilePath { get; private set; }
 
         public event PercentCompleteEventHandler PercentComplete;
-        public event EventHandler<string> Information;
-        public event EventHandler<string> BackupComplete;
+        public event InformationEventHandler Information;
+        public delegate void InformationEventHandler(object sender, string message);
+        public event BackupCompleteEventHandler BackupComplete;
+        public delegate void BackupCompleteEventHandler(object sender, string message);
 
         public AutoBackup(DateTime currentDateTime)
         {
@@ -278,4 +280,5 @@ namespace DbBackup
             return databaseVersion;
         }
     }
+
 }
