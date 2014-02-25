@@ -4,27 +4,41 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml.XPath;
 using Microsoft.SqlServer.Management.Smo;
 
-namespace DbBackup
+namespace AutoBackup
 {
     public class AutoBackup
     {
-        public string UserName { get; private set; }
-        public string DatabaseServerName { get; private set; }
-        public string DatabaseName { get; private set; }
-
-        public string BackupLocationRoot { get; private set; }
+        public string UserNameCurrentDomain { get; private set; }
+        
+        internal Properties.Settings Settings
+        {
+            get
+            {
+                return Properties.Settings.Default;
+            }
+        }
+       
+        /// <summary>
+        ///  e.g. \\backuplocation\pete.johnson
+        /// </summary>
         public string BackupLocationUserRoot { get; private set; }
+        /// <summary>
+        /// e.g. \\backuplocation\pete.johnson\p00300
+        /// </summary>
         public string BackupLocationUserAndServer { get; private set; }
+        /// <summary>
+        /// e.g. \\backuplocation\pete.johnson\p00300\2014-25-02
+        /// </summary>
         public string BackupLocationDirectory { get; private set; }
-        public string BackupFileName { get; private set; }
-        public bool ForceFullBackup { get; private set; }
 
-        public TimeSpan MaximumAgeOfFullBackup { get; private set; }
+        public string BackupFileName { get; private set; }
+
         public DateTime CurrentDateTime { get; set; }
 
         private bool _incrementalBackup;
@@ -43,9 +57,13 @@ namespace DbBackup
 
         public AutoBackup(DateTime currentDateTime)
         {
-            UserName = Environment.UserName;
             CurrentDateTime = currentDateTime;
-            LoadSettings();
+            UserNameCurrentDomain = Environment.UserName;
+        }
+
+        public void Initialize()
+        {
+            GetBackupLocationPaths();
         }
 
         public string BackupType
@@ -53,36 +71,35 @@ namespace DbBackup
             get { return _incrementalBackup ? "DIFFERENTIAL" : "FULL"; }
         }
 
-        public void LoadSettings()
+        public void GetBackupLocationPaths()
         {
-            var settings = Properties.Settings.Default;
-            BackupLocationRoot = settings.BackupLocationRoot;
-            BackupLocationUserRoot = Path.Combine(BackupLocationRoot, UserName);
+            var currentIdentity = WindowsIdentity.GetCurrent();
+            if (!currentIdentity.Name.StartsWith("TTLIVE"))
+            {
+                OnInformation(this, "This machine is not on the TTLIVE domain. Please ensure your settings are correct before attempting to backup to a different domain!");
+            }
 
-            if (string.IsNullOrWhiteSpace(settings.DatabaseServerName))
+            BackupLocationUserRoot = Path.Combine(Settings.BackupLocationRoot, UserNameCurrentDomain);
+
+            if (string.IsNullOrWhiteSpace(Settings.DatabaseServerName))
             {
                 GetDatabaseSettingsFromMasterConfig();
 
-                if (string.IsNullOrWhiteSpace(DatabaseServerName))
+                if (string.IsNullOrWhiteSpace(Settings.DatabaseServerName))
                 {
                     OnInformation(this, "Database Server is not set - database backup will fail!");
                 }
             }
-            else
-            {
-                DatabaseServerName = settings.DatabaseServerName;
-            }
+            
+            var databaseServerFolderName = Settings.DatabaseServerName;
 
-            var databaseServerFolderName = DatabaseServerName;
-            if (DatabaseServerName.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
+            if (Settings.DatabaseServerName.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
             {
                 databaseServerFolderName = Environment.MachineName;
             }
 
             BackupLocationUserAndServer = Path.Combine(BackupLocationUserRoot, databaseServerFolderName);
-            DatabaseName = settings.DatabaseName;
-            MaximumAgeOfFullBackup = TimeSpan.Parse(Properties.Settings.Default.MaximumAgeOfFullBackup);
-            ForceFullBackup = settings.ForceFullBackup;
+
         }
 
         private void GetDatabaseSettingsFromMasterConfig()
@@ -105,21 +122,19 @@ namespace DbBackup
         {
             var document = new XPathDocument(xmlConfigPath);
             var navigator = document.CreateNavigator();
-            DatabaseServerName = navigator.SelectSingleNode(@"/appSettings/add[@key='ServerName']/@value").ToString();
-            Properties.Settings.Default["DatabaseServerName"] = DatabaseServerName;
-            DatabaseName = navigator.SelectSingleNode(@"/appSettings/add[@key='DatabaseName']/@value").ToString();
-            Properties.Settings.Default["DatabaseName"] = DatabaseName;
+            Settings.DatabaseServerName = navigator.SelectSingleNode(@"/appSettings/add[@key='ServerName']/@value").ToString();
+            Settings.DatabaseName = navigator.SelectSingleNode(@"/appSettings/add[@key='DatabaseName']/@value").ToString();
             Properties.Settings.Default.Save();
         }
 
         public void PerformBackupAsync()
         {
-            if (string.IsNullOrEmpty(DatabaseServerName))
+            if (string.IsNullOrEmpty(Settings.DatabaseServerName))
             {
                 throw new ArgumentException("Database Server not set - unable to perform backup!");
             }
 
-            if (string.IsNullOrEmpty(DatabaseName))
+            if (string.IsNullOrEmpty(Settings.DatabaseName))
             {
                 throw new ArgumentException("Database name not set - unable to perform backup!");
             }
@@ -131,7 +146,9 @@ namespace DbBackup
 
             var lastBackupFolder = GetLastBackupFolder(BackupLocationUserAndServer);
 
-            var isLastBackupTooOld = (lastBackupFolder == null) || lastBackupFolder.CreationTime <= CurrentDateTime.Subtract(MaximumAgeOfFullBackup);
+            var maximumAgeOfFullBackup = TimeSpan.Parse(Settings.MaximumAgeOfFullBackup);
+
+            var isLastBackupTooOld = (lastBackupFolder == null) || lastBackupFolder.CreationTime <= CurrentDateTime.Subtract(maximumAgeOfFullBackup);
 
             _incrementalBackup = false;
 
@@ -151,7 +168,7 @@ namespace DbBackup
                 }
             }
 
-            if (ForceFullBackup)
+            if (Settings.ForceFullBackup)
             {
                 _incrementalBackup = false;
             }
@@ -163,7 +180,7 @@ namespace DbBackup
             backupDeviceItem.Name = BackupFilePath;
 
             var backup = CreateBackup(backupDeviceItem);
-            var server = new Server(DatabaseServerName);
+            var server = new Server(Settings.DatabaseServerName);
 
             OnInformation(this, "Attempting backup: " + BackupFilePath);
             backup.SqlBackupAsync(server);
@@ -191,7 +208,7 @@ namespace DbBackup
             var backup = new Backup
             {
                 Action = BackupActionType.Database,
-                Database = DatabaseName,
+                Database = Settings.DatabaseName,
                 MediaName = "FileSystem"
             };
 
@@ -261,9 +278,9 @@ namespace DbBackup
         private string GetAlbDatabaseVersion()
         {
             var builder = new SqlConnectionStringBuilder();
-            builder["Data Source"] = DatabaseServerName;
+            builder["Data Source"] = Settings.DatabaseServerName;
             builder["integrated Security"] = true;
-            builder["Initial Catalog"] = DatabaseName;
+            builder["Initial Catalog"] = Settings.DatabaseName;
             var databaseVersion = string.Empty;
 
             using (var connection = new SqlConnection(builder.ConnectionString))

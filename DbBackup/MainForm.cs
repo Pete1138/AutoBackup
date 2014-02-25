@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Windows.Forms;
 using Microsoft.SqlServer.Management.Smo;
 
-namespace DbBackup
+namespace AutoBackup
 {
     public partial class MainForm : Form
     {
@@ -18,14 +21,15 @@ namespace DbBackup
             InitializeComponent();
 
             _autoBackup = new AutoBackup(DateTime.Now);
-
-            hyperlinkLabel.Text = _autoBackup.BackupLocationUserRoot;
-            hyperlinkLabel.Click += hyperlinkLabel_Click;
-
             _autoBackup.PercentComplete += AutoBackup_PercentComplete;
             _autoBackup.Information += AutoBackup_Information;
             _autoBackup.BackupComplete += AutoBackup_BackupComplete;
 
+            _autoBackup.Initialize();
+
+            hyperlinkLabel.Text = _autoBackup.BackupLocationUserRoot;
+            hyperlinkLabel.Click += hyperlinkLabel_Click;
+            
             LoadSettings();
 
             Text = _formTitle;
@@ -70,7 +74,14 @@ namespace DbBackup
 
         private void AutoBackup_Information(object sender, string message)
         {
-            BeginInvoke(new Action<string>(ShowMessage), message);
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<string>(ShowMessage), message);
+            }
+            else
+            {
+                ShowMessage(message);
+            }
         }
 
         private void AutoBackup_PercentComplete(object sender, PercentCompleteEventArgs e)
@@ -83,10 +94,10 @@ namespace DbBackup
             BackupButton.Enabled = false;
             progressBar1.Value = 0;
             MessagesTextbox.Clear();
-            StatusBarLabel.Text = string.Format(StatusBarMessage, _autoBackup.DatabaseName, _autoBackup.BackupLocationUserRoot);
+            StatusBarLabel.Text = string.Format(StatusBarMessage, _autoBackup.Settings.DatabaseName, _autoBackup.BackupLocationUserRoot);
             SetWaitCursors();
-            
-            _autoBackup.CurrentDateTime  = DateTime.Now;
+
+            _autoBackup.CurrentDateTime = DateTime.Now;
 
             try
             {
@@ -115,28 +126,36 @@ namespace DbBackup
             var settings = Properties.Settings.Default;
             settings.BackupLocationRoot = BackupLocationRootTextbox.Text;
             settings.DatabaseName = DatabaseNameTextbox.Text;
-            settings.DatabaseServerName = DatabaseServerNameTextbox.Text;
             settings.MaximumAgeOfFullBackup = MaximumAgeOfFullBackupTextbox.Text;
+            settings.DatabaseServerName = DatabaseServerNameTextbox.Text;
+            settings.Domain = DomainTextbox.Text;
+            settings.UserName = UserNameOtherDomainTextbox.Text;
+            settings.Password = PasswordTextbox.Text;
+
             settings.Save();
 
-            _autoBackup.LoadSettings();
+            _autoBackup.GetBackupLocationPaths();
         }
 
         private void LoadSettings()
         {
-            BackupLocationRootTextbox.Text = _autoBackup.BackupLocationRoot;
-            DatabaseNameTextbox.Text = _autoBackup.DatabaseName;
-            DatabaseServerNameTextbox.Text = _autoBackup.DatabaseServerName;
-            MaximumAgeOfFullBackupTextbox.Text = _autoBackup.MaximumAgeOfFullBackup.ToString();
-            UsernameTextbox.Text = _autoBackup.UserName;
-            ForceFullBackupCheckbox.Checked = _autoBackup.ForceFullBackup;
+            BackupLocationRootTextbox.Text = _autoBackup.Settings.BackupLocationRoot;
+            DatabaseNameTextbox.Text = _autoBackup.Settings.DatabaseName;
+            MaximumAgeOfFullBackupTextbox.Text = _autoBackup.Settings.MaximumAgeOfFullBackup;
+            ForceFullBackupCheckbox.Checked = _autoBackup.Settings.ForceFullBackup;
+            DatabaseServerNameTextbox.Text = _autoBackup.Settings.DatabaseServerName;
+            DomainTextbox.Text = _autoBackup.Settings.Domain;
+            UserNameOtherDomainTextbox.Text = _autoBackup.Settings.UserName;
+            PasswordTextbox.Text = _autoBackup.Settings.Password;
+
+            UsernameTextbox.Text = _autoBackup.UserNameCurrentDomain;
         }
 
         private void ForceFullBackupCheckbox_CheckedChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.ForceFullBackup = ForceFullBackupCheckbox.Checked;
             Properties.Settings.Default.Save();
-            _autoBackup.LoadSettings();
+            _autoBackup.GetBackupLocationPaths();
         }
     }
 }
