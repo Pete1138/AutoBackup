@@ -1,21 +1,18 @@
 ﻿using System;
-using System.Configuration;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Principal;
 using System.Text;
-using System.Windows.Forms;
-using System.Xml.XPath;
 using Microsoft.SqlServer.Management.Smo;
 
 namespace AutoBackup
 {
-    public class AutoBackup
+    public class AutoBackup : InformationBroadcaster
     {
         public string UserNameCurrentDomain { get; private set; }
-        
+        private readonly FileLocationHelper _fileLocationHelper;
+
         internal Properties.Settings Settings
         {
             get
@@ -23,15 +20,25 @@ namespace AutoBackup
                 return Properties.Settings.Default;
             }
         }
-       
+
         /// <summary>
         ///  e.g. \\backuplocation\pete.johnson
         /// </summary>
-        public string BackupLocationUserRoot { get; private set; }
+        private string _backupLocationUserRoot;
+        public string BackupLocationUserRoot
+        { 
+            get { return _backupLocationUserRoot; }
+        }
+
         /// <summary>
         /// e.g. \\backuplocation\pete.johnson\p00300
         /// </summary>
-        public string BackupLocationUserAndServer { get; private set; }
+        private string _backupLocationUserAndServer;
+        public string BackupLocationUserAndServer
+        {
+            get { return _backupLocationUserAndServer; }
+        }
+
         /// <summary>
         /// e.g. \\backuplocation\pete.johnson\p00300\2014-25-02
         /// </summary>
@@ -41,17 +48,12 @@ namespace AutoBackup
 
         public DateTime CurrentDateTime { get; set; }
 
-        private bool _incrementalBackup;
-
-        private const string MasterConfigPath32Bit = @"C:\Program Files\Advanced Legal\ALB\PMS\master.config";
-        private const string MasterConfigPath64Bit = @"C:\Program Files (x86)\Advanced Legal\ALB\PMS\master.config";
-        private const string BackupFileExtension = ".bak";
+        private bool _isBackupIncremental;
 
         public string BackupFilePath { get; private set; }
 
         public event PercentCompleteEventHandler PercentComplete;
-        public event InformationEventHandler Information;
-        public delegate void InformationEventHandler(object sender, string message);
+       
         public event BackupCompleteEventHandler BackupComplete;
         public delegate void BackupCompleteEventHandler(object sender, string message);
 
@@ -59,72 +61,20 @@ namespace AutoBackup
         {
             CurrentDateTime = currentDateTime;
             UserNameCurrentDomain = Environment.UserName;
+            
+            _fileLocationHelper = new FileLocationHelper(UserNameCurrentDomain);
+            _fileLocationHelper.Information += OnInformation;
+
         }
 
         public void Initialize()
         {
-            GetBackupLocationPaths();
+            _fileLocationHelper. GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer );
         }
 
         public string BackupType
         {
-            get { return _incrementalBackup ? "DIFFERENTIAL" : "FULL"; }
-        }
-
-        public void GetBackupLocationPaths()
-        {
-            var currentIdentity = WindowsIdentity.GetCurrent();
-            if (!currentIdentity.Name.StartsWith("TTLIVE"))
-            {
-                OnInformation(this, "This machine is not on the TTLIVE domain. Please ensure your settings are correct before attempting to backup to a different domain!");
-            }
-
-            BackupLocationUserRoot = Path.Combine(Settings.BackupLocationRoot, UserNameCurrentDomain);
-
-            if (string.IsNullOrWhiteSpace(Settings.DatabaseServerName))
-            {
-                GetDatabaseSettingsFromMasterConfig();
-
-                if (string.IsNullOrWhiteSpace(Settings.DatabaseServerName))
-                {
-                    OnInformation(this, "Database Server is not set - database backup will fail!");
-                }
-            }
-            
-            var databaseServerFolderName = Settings.DatabaseServerName;
-
-            if (Settings.DatabaseServerName.Equals("localhost", StringComparison.InvariantCultureIgnoreCase))
-            {
-                databaseServerFolderName = Environment.MachineName;
-            }
-
-            BackupLocationUserAndServer = Path.Combine(BackupLocationUserRoot, databaseServerFolderName);
-
-        }
-
-        private void GetDatabaseSettingsFromMasterConfig()
-        {
-            if (File.Exists(MasterConfigPath32Bit))
-            {
-                SetDatabaseSettingsFromXmlConfig(MasterConfigPath32Bit);
-            }
-            else if (File.Exists(MasterConfigPath64Bit))
-            {
-                SetDatabaseSettingsFromXmlConfig(MasterConfigPath64Bit);
-            }
-            else
-            {
-                OnInformation(this, "Unable to find PMS installation on local machine");
-            }
-        }
-
-        private void SetDatabaseSettingsFromXmlConfig(string xmlConfigPath)
-        {
-            var document = new XPathDocument(xmlConfigPath);
-            var navigator = document.CreateNavigator();
-            Settings.DatabaseServerName = navigator.SelectSingleNode(@"/appSettings/add[@key='ServerName']/@value").ToString();
-            Settings.DatabaseName = navigator.SelectSingleNode(@"/appSettings/add[@key='DatabaseName']/@value").ToString();
-            Properties.Settings.Default.Save();
+            get { return _isBackupIncremental ? "DIFFERENTIAL" : "FULL"; }
         }
 
         public void PerformBackupAsync()
@@ -142,21 +92,21 @@ namespace AutoBackup
             var backupDeviceItem = new BackupDeviceItem();
             backupDeviceItem.DeviceType = DeviceType.File;
 
-            CreateDirectoryIfNotExists(BackupLocationUserAndServer);
+            FileLocationHelper.CreateDirectoryIfNotExists(BackupLocationUserAndServer);
 
-            var lastBackupFolder = GetLastBackupFolder(BackupLocationUserAndServer);
+            var lastBackupFolder = FileLocationHelper.GetLastBackupFolder(BackupLocationUserAndServer);
 
             var maximumAgeOfFullBackup = TimeSpan.Parse(Settings.MaximumAgeOfFullBackup);
 
             var isLastBackupTooOld = (lastBackupFolder == null) || lastBackupFolder.CreationTime <= CurrentDateTime.Subtract(maximumAgeOfFullBackup);
 
-            _incrementalBackup = false;
+            _isBackupIncremental = false;
 
             if (isLastBackupTooOld)
             {
                 BackupLocationDirectory = Path.Combine(BackupLocationUserAndServer, CurrentDateTime.Date.ToString("yyy-MM-dd"));
 
-                CreateDirectoryIfNotExists(BackupLocationDirectory);
+                FileLocationHelper.CreateDirectoryIfNotExists(BackupLocationDirectory);
             }
             else
             {
@@ -164,17 +114,17 @@ namespace AutoBackup
                 var directoryHasAFullBackup = new DirectoryInfo(BackupLocationDirectory).GetFiles("*.full.bak").Any();
                 if (directoryHasAFullBackup)
                 {
-                    _incrementalBackup = true;
+                    _isBackupIncremental = true;
                 }
             }
 
             if (Settings.ForceFullBackup)
             {
-                _incrementalBackup = false;
+                _isBackupIncremental = false;
             }
 
             var albDatabaseVersion = GetAlbDatabaseVersion();
-            BackupFileName = GetBackupFileName(albDatabaseVersion);
+            BackupFileName = GetBackupFileName(albDatabaseVersion, _isBackupIncremental);
 
             BackupFilePath = Path.Combine(BackupLocationDirectory, BackupFileName);
             backupDeviceItem.Name = BackupFilePath;
@@ -186,21 +136,15 @@ namespace AutoBackup
             backup.SqlBackupAsync(server);
         }
 
-        private string GetBackupFileName(string albDatabaseVersion)
+        private string GetBackupFileName(string albDatabaseVersion, bool isBackupIncremental)
         {
             var sb = new StringBuilder();
+            const string backupFileExtension = ".bak";
             sb.Append(CurrentDateTime.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture));
             sb.Append("_v." + albDatabaseVersion);
-            sb.Append(_incrementalBackup ? ".diff" : ".full");
-            sb.Append(BackupFileExtension);
+            sb.Append(isBackupIncremental ? ".diff" : ".full");
+            sb.Append(backupFileExtension);
             return sb.ToString();
-        }
-
-        private DirectoryInfo GetLastBackupFolder(string backupLocationUserAndServerRoot)
-        {
-            var directory = new DirectoryInfo(backupLocationUserAndServerRoot);
-            var latestDirectory = directory.GetDirectories().OrderByDescending(x => x.CreationTime).FirstOrDefault();
-            return latestDirectory;
         }
 
         private Backup CreateBackup(BackupDeviceItem backupDeviceItem)
@@ -214,7 +158,7 @@ namespace AutoBackup
 
             backup.Devices.Add(backupDeviceItem);
             backup.Initialize = true;
-            backup.Incremental = _incrementalBackup;
+            backup.Incremental = _isBackupIncremental;
 
             backup.Complete += Backup_Complete;
             backup.PercentComplete += Backup_PercentComplete;
@@ -225,13 +169,6 @@ namespace AutoBackup
             return backup;
         }
 
-        private void CreateDirectoryIfNotExists(string directoryPath)
-        {
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-        }
 
         private void OnPercentComplete(object sender, PercentCompleteEventArgs e)
         {
@@ -239,15 +176,6 @@ namespace AutoBackup
             if (handler != null)
             {
                 PercentComplete(sender, e);
-            }
-        }
-
-        private void OnInformation(object sender, string message)
-        {
-            var handler = Information;
-            if (handler != null)
-            {
-                Information(sender, message);
             }
         }
 
@@ -295,6 +223,11 @@ namespace AutoBackup
             }
 
             return databaseVersion;
+        }
+
+        public void ReloadSettings()
+        {
+            _fileLocationHelper.GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer);
         }
     }
 

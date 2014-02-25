@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Configuration;
 using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Windows.Forms;
 using Microsoft.SqlServer.Management.Smo;
 
@@ -11,7 +7,9 @@ namespace AutoBackup
 {
     public partial class MainForm : Form
     {
-        private AutoBackup _autoBackup;
+        private readonly AutoBackup _autoBackup;
+       
+
         private const string StatusBarMessage = "Backing up database {0} to {1}....";
         private const string BackupCompleteMessage = "{0} backup created : {1}";
         private readonly string _formTitle = "ALB Database Backup : " + Environment.UserName;
@@ -134,7 +132,7 @@ namespace AutoBackup
 
             settings.Save();
 
-            _autoBackup.GetBackupLocationPaths();
+            _autoBackup.ReloadSettings();
         }
 
         private void LoadSettings()
@@ -155,7 +153,8 @@ namespace AutoBackup
         {
             Properties.Settings.Default.ForceFullBackup = ForceFullBackupCheckbox.Checked;
             Properties.Settings.Default.Save();
-            _autoBackup.GetBackupLocationPaths();
+
+            _autoBackup.ReloadSettings();
         }
     }
 }

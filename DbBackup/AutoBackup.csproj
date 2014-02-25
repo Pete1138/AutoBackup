@@ -66,6 +66,8 @@
   <ItemGroup>
     <Compile Include="AutoBackup.cs" />
     <Compile Include="FileCopier.cs" />
+    <Compile Include="FileLocationHelper.cs" />
+    <Compile Include="InformationBroadcaster.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
