@@ -79,7 +79,7 @@
             // BackupButton
             // 
             this.BackupButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.BackupButton.Location = new System.Drawing.Point(595, 437);
+            this.BackupButton.Location = new System.Drawing.Point(898, 508);
             this.BackupButton.Name = "BackupButton";
             this.BackupButton.Size = new System.Drawing.Size(110, 40);
             this.BackupButton.TabIndex = 3;
@@ -93,7 +93,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.progressBar1.Location = new System.Drawing.Point(8, 6);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(697, 55);
+            this.progressBar1.Size = new System.Drawing.Size(1000, 55);
             this.progressBar1.TabIndex = 4;
             // 
             // MessagesTextbox
@@ -106,7 +106,7 @@
             this.MessagesTextbox.Name = "MessagesTextbox";
             this.MessagesTextbox.ReadOnly = true;
             this.MessagesTextbox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.MessagesTextbox.Size = new System.Drawing.Size(697, 364);
+            this.MessagesTextbox.Size = new System.Drawing.Size(1000, 435);
             this.MessagesTextbox.TabIndex = 5;
             // 
             // statusStrip1
@@ -115,7 +115,7 @@
             this.StatusBarLabel});
             this.statusStrip1.Location = new System.Drawing.Point(0, 583);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(714, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(1017, 22);
             this.statusStrip1.TabIndex = 6;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -134,7 +134,7 @@
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(719, 580);
+            this.tabControl1.Size = new System.Drawing.Size(1022, 580);
             this.tabControl1.TabIndex = 7;
             // 
             // MainTabPage
@@ -147,7 +147,7 @@
             this.MainTabPage.Location = new System.Drawing.Point(4, 22);
             this.MainTabPage.Name = "MainTabPage";
             this.MainTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.MainTabPage.Size = new System.Drawing.Size(711, 483);
+            this.MainTabPage.Size = new System.Drawing.Size(1014, 554);
             this.MainTabPage.TabIndex = 0;
             this.MainTabPage.Text = "Main";
             this.MainTabPage.UseVisualStyleBackColor = true;
@@ -156,7 +156,7 @@
             // 
             this.ForceFullBackupCheckbox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.ForceFullBackupCheckbox.AutoSize = true;
-            this.ForceFullBackupCheckbox.Location = new System.Drawing.Point(8, 460);
+            this.ForceFullBackupCheckbox.Location = new System.Drawing.Point(8, 531);
             this.ForceFullBackupCheckbox.Name = "ForceFullBackupCheckbox";
             this.ForceFullBackupCheckbox.Size = new System.Drawing.Size(112, 17);
             this.ForceFullBackupCheckbox.TabIndex = 7;
@@ -168,7 +168,7 @@
             // 
             this.hyperlinkLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.hyperlinkLabel.AutoSize = true;
-            this.hyperlinkLabel.Location = new System.Drawing.Point(8, 437);
+            this.hyperlinkLabel.Location = new System.Drawing.Point(8, 508);
             this.hyperlinkLabel.Name = "hyperlinkLabel";
             this.hyperlinkLabel.Size = new System.Drawing.Size(55, 13);
             this.hyperlinkLabel.TabIndex = 6;
@@ -182,7 +182,7 @@
             this.SettingsTabPage.Location = new System.Drawing.Point(4, 22);
             this.SettingsTabPage.Name = "SettingsTabPage";
             this.SettingsTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.SettingsTabPage.Size = new System.Drawing.Size(711, 554);
+            this.SettingsTabPage.Size = new System.Drawing.Size(1014, 554);
             this.SettingsTabPage.TabIndex = 1;
             this.SettingsTabPage.Text = "Settings";
             this.SettingsTabPage.UseVisualStyleBackColor = true;
@@ -190,7 +190,7 @@
             // SaveButton
             // 
             this.SaveButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.SaveButton.Location = new System.Drawing.Point(595, 508);
+            this.SaveButton.Location = new System.Drawing.Point(898, 508);
             this.SaveButton.Name = "SaveButton";
             this.SaveButton.Size = new System.Drawing.Size(110, 40);
             this.SaveButton.TabIndex = 1;
@@ -237,7 +237,7 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(697, 533);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1000, 533);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // label3
@@ -498,7 +498,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(714, 605);
+            this.ClientSize = new System.Drawing.Size(1017, 605);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.statusStrip1);
             this.Name = "MainForm";
