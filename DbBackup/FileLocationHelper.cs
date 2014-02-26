@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Principal;
+using System.Text;
 using System.Xml.XPath;
 using AutoBackup.Properties;
 
@@ -90,6 +92,18 @@ namespace AutoBackup
             var directory = new DirectoryInfo(backupLocationUserAndServerRoot);
             var latestDirectory = directory.GetDirectories().OrderByDescending(x => x.CreationTime).FirstOrDefault();
             return latestDirectory;
+        }
+
+
+        public static string GetBackupFileName(string albDatabaseVersion, bool isBackupIncremental, DateTime currentDateTime)
+        {
+            var sb = new StringBuilder();
+            const string backupFileExtension = ".bak";
+            sb.Append(currentDateTime.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture));
+            sb.Append("_v." + albDatabaseVersion);
+            sb.Append(isBackupIncremental ? ".diff" : ".full");
+            sb.Append(backupFileExtension);
+            return sb.ToString();
         }
     }
 }

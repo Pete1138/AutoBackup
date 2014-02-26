@@ -129,7 +129,7 @@ namespace AutoBackup
             settings.Domain = DomainTextbox.Text;
             settings.UserName = UserNameOtherDomainTextbox.Text;
             settings.Password = PasswordTextbox.Text;
-
+            settings.IsBackupOnDifferentDomain = isBackupToDifferentDomainCheckbox.Checked;
             settings.Save();
 
             _autoBackup.ReloadSettings();
@@ -145,8 +145,10 @@ namespace AutoBackup
             DomainTextbox.Text = _autoBackup.Settings.Domain;
             UserNameOtherDomainTextbox.Text = _autoBackup.Settings.UserName;
             PasswordTextbox.Text = _autoBackup.Settings.Password;
-
             UsernameTextbox.Text = _autoBackup.UserNameCurrentDomain;
+            isBackupToDifferentDomainCheckbox.Checked = _autoBackup.Settings.IsBackupOnDifferentDomain;
+
+            SetEnabledStateForCrossDomainBackupControls();
         }
 
         private void ForceFullBackupCheckbox_CheckedChanged(object sender, EventArgs e)
@@ -155,6 +157,19 @@ namespace AutoBackup
             Properties.Settings.Default.Save();
 
             _autoBackup.ReloadSettings();
+        }
+
+        private void isBackupToDifferentDomain_CheckedChanged(object sender, EventArgs e)
+        {
+           SetEnabledStateForCrossDomainBackupControls();
+        }
+
+        private void SetEnabledStateForCrossDomainBackupControls()
+        {
+           DomainTextbox.Enabled =
+           UserNameOtherDomainTextbox.Enabled =
+           PasswordTextbox.Enabled =
+           isBackupToDifferentDomainCheckbox.Checked;
         }
     }
 }

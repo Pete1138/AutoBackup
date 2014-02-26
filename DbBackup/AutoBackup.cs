@@ -69,7 +69,7 @@ namespace AutoBackup
 
         public void Initialize()
         {
-            _fileLocationHelper. GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer );
+            _fileLocationHelper.GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer );
         }
 
         public string BackupType
@@ -88,9 +88,6 @@ namespace AutoBackup
             {
                 throw new ArgumentException("Database name not set - unable to perform backup!");
             }
-
-            var backupDeviceItem = new BackupDeviceItem();
-            backupDeviceItem.DeviceType = DeviceType.File;
 
             FileLocationHelper.CreateDirectoryIfNotExists(BackupLocationUserAndServer);
 
@@ -124,31 +121,24 @@ namespace AutoBackup
             }
 
             var albDatabaseVersion = GetAlbDatabaseVersion();
-            BackupFileName = GetBackupFileName(albDatabaseVersion, _isBackupIncremental);
+            BackupFileName = FileLocationHelper.GetBackupFileName(albDatabaseVersion, _isBackupIncremental, CurrentDateTime);
 
             BackupFilePath = Path.Combine(BackupLocationDirectory, BackupFileName);
-            backupDeviceItem.Name = BackupFilePath;
-
-            var backup = CreateBackup(backupDeviceItem);
+            
+            var backup = CreateBackupObject(BackupFilePath);
             var server = new Server(Settings.DatabaseServerName);
 
             OnInformation(this, "Attempting backup: " + BackupFilePath);
             backup.SqlBackupAsync(server);
         }
 
-        private string GetBackupFileName(string albDatabaseVersion, bool isBackupIncremental)
-        {
-            var sb = new StringBuilder();
-            const string backupFileExtension = ".bak";
-            sb.Append(CurrentDateTime.ToString("yyyy-MM-dd_HHmmss", CultureInfo.InvariantCulture));
-            sb.Append("_v." + albDatabaseVersion);
-            sb.Append(isBackupIncremental ? ".diff" : ".full");
-            sb.Append(backupFileExtension);
-            return sb.ToString();
-        }
 
-        private Backup CreateBackup(BackupDeviceItem backupDeviceItem)
+        private Backup CreateBackupObject(string backupFilePath)
         {
+            var backupDeviceItem = new BackupDeviceItem();
+            backupDeviceItem.DeviceType = DeviceType.File;
+            backupDeviceItem.Name = backupFilePath;
+
             var backup = new Backup
             {
                 Action = BackupActionType.Database,

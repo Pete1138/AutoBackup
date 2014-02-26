@@ -118,5 +118,17 @@ namespace AutoBackup.Properties {
                 this["Password"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsBackupOnDifferentDomain {
+            get {
+                return ((bool)(this["IsBackupOnDifferentDomain"]));
+            }
+            set {
+                this["IsBackupOnDifferentDomain"] = value;
+            }
+        }
     }
 }
