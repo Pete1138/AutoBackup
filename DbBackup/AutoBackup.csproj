@@ -45,6 +45,11 @@
     <Reference Include="Microsoft.SqlServer.SmoExtended, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.SqlServer.SqlClrProvider, Version=10.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\Microsoft.SqlServer.SqlClrProvider.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.SqlServer.SqlEnum, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files\Microsoft SQL Server\110\SDK\Assemblies\Microsoft.SqlServer.SqlEnum.dll</HintPath>
@@ -65,8 +70,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoBackup.cs" />
+    <Compile Include="Ensure.cs" />
     <Compile Include="FileCopier.cs" />
     <Compile Include="FileLocationHelper.cs" />
+    <Compile Include="IdentityImpersonation.cs" />
     <Compile Include="InformationBroadcaster.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
@@ -104,6 +111,14 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Microsoft.SqlServer.ConnectionInfo.dll" />
+    <Content Include="Microsoft.SqlServer.Management.Sdk.Sfc.dll" />
+    <Content Include="Microsoft.SqlServer.Smo.dll" />
+    <Content Include="Microsoft.SqlServer.SmoExtended.dll" />
+    <Content Include="Microsoft.SqlServer.SqlClrProvider.dll" />
+    <Content Include="Microsoft.SqlServer.SqlEnum.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -12,6 +12,7 @@ namespace AutoBackup
     {
         public string UserNameCurrentDomain { get; private set; }
         private readonly FileLocationHelper _fileLocationHelper;
+        private IdentityImpersonation _identityImpersonation;
 
         internal Properties.Settings Settings
         {
@@ -26,7 +27,7 @@ namespace AutoBackup
         /// </summary>
         private string _backupLocationUserRoot;
         public string BackupLocationUserRoot
-        { 
+        {
             get { return _backupLocationUserRoot; }
         }
 
@@ -53,7 +54,7 @@ namespace AutoBackup
         public string BackupFilePath { get; private set; }
 
         public event PercentCompleteEventHandler PercentComplete;
-       
+
         public event BackupCompleteEventHandler BackupComplete;
         public delegate void BackupCompleteEventHandler(object sender, string message);
 
@@ -61,15 +62,17 @@ namespace AutoBackup
         {
             CurrentDateTime = currentDateTime;
             UserNameCurrentDomain = Environment.UserName;
-            
+
             _fileLocationHelper = new FileLocationHelper(UserNameCurrentDomain);
             _fileLocationHelper.Information += OnInformation;
+
+            _identityImpersonation = new IdentityImpersonation();
 
         }
 
         public void Initialize()
         {
-            _fileLocationHelper.GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer );
+            _fileLocationHelper.GetBackupLocationPaths(out _backupLocationUserRoot, out _backupLocationUserAndServer);
         }
 
         public string BackupType
@@ -87,6 +90,14 @@ namespace AutoBackup
             if (string.IsNullOrEmpty(Settings.DatabaseName))
             {
                 throw new ArgumentException("Database name not set - unable to perform backup!");
+            }
+
+            if (Settings.IsBackupOnDifferentDomain)
+            {
+                throw new NotImplementedException(@"Need to get full path to backup on remote server (e.g. C:\Program Files\Microsoft SQL Server\...\Backup\xxx.bak");
+                var message = string.Format(@"Impersonating {0}\{1}", Settings.UserName, Settings.Domain);
+                OnInformation(this, message);
+                _identityImpersonation.Impersonate(Settings.UserName, Settings.Domain, Settings.Password);
             }
 
             FileLocationHelper.CreateDirectoryIfNotExists(BackupLocationUserAndServer);
@@ -124,11 +135,13 @@ namespace AutoBackup
             BackupFileName = FileLocationHelper.GetBackupFileName(albDatabaseVersion, _isBackupIncremental, CurrentDateTime);
 
             BackupFilePath = Path.Combine(BackupLocationDirectory, BackupFileName);
-            
-            var backup = CreateBackupObject(BackupFilePath);
+
+            var tempBackupFilePath = Settings.IsBackupOnDifferentDomain ? BackupFileName : BackupFilePath;
+            var backup = CreateBackupObject(tempBackupFilePath);
             var server = new Server(Settings.DatabaseServerName);
 
-            OnInformation(this, "Attempting backup: " + BackupFilePath);
+            OnInformation(this, "Attempting backup: " + tempBackupFilePath);
+
             backup.SqlBackupAsync(server);
         }
 
@@ -190,7 +203,34 @@ namespace AutoBackup
 
         private void Backup_Complete(object sender, Microsoft.SqlServer.Management.Common.ServerMessageEventArgs e)
         {
-            OnBackupComplete(sender, e.Error.Message);
+            try
+            {
+
+                if (Settings.IsBackupOnDifferentDomain)
+                {
+                    var message = string.Format("Attempting to copy backup '{0}' to '{1}'", BackupFileName,
+                                                BackupFilePath);
+                    OnInformation(this, message);
+                    var fileCopier = new FileCopier();
+
+                    try
+                    {
+                        fileCopier.CopyFile(BackupFileName, BackupFilePath, deleteSourceFile: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnInformation(this, ex.Message);
+                        return;
+                    }
+                }
+
+                OnBackupComplete(sender, e.Error.Message);
+
+            }
+            finally
+            {
+                _identityImpersonation.Dispose();
+            }
         }
 
         private string GetAlbDatabaseVersion()

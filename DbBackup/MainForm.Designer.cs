@@ -426,9 +426,9 @@
             this.label10.Location = new System.Drawing.Point(3, 225);
             this.label10.Margin = new System.Windows.Forms.Padding(3, 5, 3, 0);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(158, 13);
+            this.label10.Size = new System.Drawing.Size(161, 13);
             this.label10.TabIndex = 15;
-            this.label10.Text = "Password (ondomain to copy to)";
+            this.label10.Text = "Password (on domain to copy to)";
             // 
             // label7
             // 
