@@ -13,6 +13,7 @@ namespace AutoBackup
     public class FileLocationHelper : InformationBroadcaster
     {
         private readonly string _usernameCurrentDomain;
+        private const string MasterConfigPath32BitOld = @"C:\Program Files\IRISLaw\PMS\master.config";
         private const string MasterConfigPath32Bit = @"C:\Program Files\Advanced Legal\ALB\PMS\master.config";
         private const string MasterConfigPath64Bit = @"C:\Program Files (x86)\Advanced Legal\ALB\PMS\master.config";
 
@@ -59,6 +60,10 @@ namespace AutoBackup
             if (File.Exists(MasterConfigPath32Bit))
             {
                 SetDatabaseSettingsFromXmlConfig(MasterConfigPath32Bit);
+            }
+            else if (File.Exists(MasterConfigPath32BitOld))
+            {
+                SetDatabaseSettingsFromXmlConfig(MasterConfigPath32BitOld);
             }
             else if (File.Exists(MasterConfigPath64Bit))
             {

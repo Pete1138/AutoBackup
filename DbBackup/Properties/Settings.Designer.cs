@@ -130,5 +130,29 @@ namespace AutoBackup.Properties {
                 this["IsBackupOnDifferentDomain"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("sa")]
+        public string SqlServerUserId {
+            get {
+                return ((string)(this["SqlServerUserId"]));
+            }
+            set {
+                this["SqlServerUserId"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("20Mountain08")]
+        public string SqlServerPassword {
+            get {
+                return ((string)(this["SqlServerPassword"]));
+            }
+            set {
+                this["SqlServerPassword"] = value;
+            }
+        }
     }
 }

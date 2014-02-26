@@ -14,7 +14,6 @@ namespace AutoBackup
                 throw new ArgumentException("The file " + sourceFilePath + " does not exist");
             }
 
-            //TODO file copy is successful but execution never returns (?)
             File.Copy(sourceFilePath, destinationFilePath, true);
 
             if (deleteSourceFile)

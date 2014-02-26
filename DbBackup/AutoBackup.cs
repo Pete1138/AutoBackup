@@ -240,8 +240,11 @@ namespace AutoBackup
         {
             var builder = new SqlConnectionStringBuilder();
             builder["Data Source"] = Settings.DatabaseServerName;
-            builder["integrated Security"] = true;
+            builder["Integrated Security"] = false;
+            builder["User ID"] = Settings.SqlServerUserId;
+            builder["Password"] = Settings.SqlServerPassword;
             builder["Initial Catalog"] = Settings.DatabaseName;
+
             var databaseVersion = string.Empty;
 
             using (var connection = new SqlConnection(builder.ConnectionString))

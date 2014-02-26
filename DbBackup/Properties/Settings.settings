@@ -29,5 +29,11 @@
     <Setting Name="IsBackupOnDifferentDomain" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="SqlServerUserId" Type="System.String" Scope="User">
+      <Value Profile="(Default)">sa</Value>
+    </Setting>
+    <Setting Name="SqlServerPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)">20Mountain08</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
