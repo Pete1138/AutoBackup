@@ -227,7 +227,8 @@ namespace AutoBackup
                     }
                 }
 
-                OnBackupComplete(sender, e.Error.Message);
+                var completeMessage = e.Error.Number > 0 ? e.Error.Number.ToString() + ":" + e.Error.ToString() : e.Error.ToString();
+                OnBackupComplete(sender, completeMessage);
 
             }
             finally
