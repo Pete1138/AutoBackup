@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Principal;
 using System.Text;
 using System.Xml.XPath;
@@ -104,6 +105,14 @@ namespace AutoBackup
             sb.Append(isBackupIncremental ? ".diff" : ".full");
             sb.Append(backupFileExtension);
             return sb.ToString();
+        }
+
+        public static string GetAssemblyDirectory()
+        {
+            string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+            var uri = new UriBuilder(codeBase);
+            string path = Uri.UnescapeDataString(uri.Path);
+            return Path.GetDirectoryName(path);
         }
     }
 }

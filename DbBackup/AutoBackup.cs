@@ -13,6 +13,9 @@ namespace AutoBackup
         public string UserNameCurrentDomain { get; private set; }
         private readonly FileLocationHelper _fileLocationHelper;
         private IdentityImpersonation _identityImpersonation;
+        
+        // the temporary location where a backup is made before being copied to another domain
+        private string _tempLocalFilePath;
 
         internal Properties.Settings Settings
         {
@@ -94,7 +97,6 @@ namespace AutoBackup
 
             if (Settings.IsBackupOnDifferentDomain)
             {
-                throw new NotImplementedException(@"Need to get full path to backup on remote server (e.g. C:\Program Files\Microsoft SQL Server\...\Backup\xxx.bak");
                 var message = string.Format(@"Impersonating {0}\{1}", Settings.UserName, Settings.Domain);
                 OnInformation(this, message);
                 _identityImpersonation.Impersonate(Settings.UserName, Settings.Domain, Settings.Password);
@@ -136,11 +138,12 @@ namespace AutoBackup
 
             BackupFilePath = Path.Combine(BackupLocationDirectory, BackupFileName);
 
-            var tempBackupFilePath = Settings.IsBackupOnDifferentDomain ? BackupFileName : BackupFilePath;
-            var backup = CreateBackupObject(tempBackupFilePath);
+            _tempLocalFilePath = Settings.IsBackupOnDifferentDomain ?  Path.Combine(FileLocationHelper.GetAssemblyDirectory(),BackupFileName) : BackupFilePath;
+
+            var backup = CreateBackupObject(_tempLocalFilePath);
             var server = new Server(Settings.DatabaseServerName);
 
-            OnInformation(this, "Attempting backup: " + tempBackupFilePath);
+            OnInformation(this, "Attempting backup: " + _tempLocalFilePath);
 
             backup.SqlBackupAsync(server);
         }
@@ -215,7 +218,7 @@ namespace AutoBackup
 
                     try
                     {
-                        fileCopier.CopyFile(BackupFileName, BackupFilePath, deleteSourceFile: true);
+                        fileCopier.CopyFile(_tempLocalFilePath, BackupFilePath, deleteSourceFile: true);
                     }
                     catch (Exception ex)
                     {
